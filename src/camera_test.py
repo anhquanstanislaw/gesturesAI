@@ -1,6 +1,7 @@
 import cv2
 import mediapipe as mp
 import sys
+import platform
 
 def start_hand_tracking():
     mp_hands = mp.solutions.hands
@@ -13,8 +14,16 @@ def start_hand_tracking():
         min_tracking_confidence=0.5
     )
 
-    cap = cv2.VideoCapture(0, cv2.CAP_AVFOUNDATION)
-
+    
+    current_os = platform.system()
+    if current_os == "Darwin":
+        # MAC OS
+        camera_backend = cv2.CAP_AVFOUNDATION
+    else:
+        # WINDOWS
+        camera_backend = cv2.CAP_DSHOW
+        
+    cap = cv2.VideoCapture(0, camera_backend)
     if not cap.isOpened():
         print("Error: Could not open camera.")
         return
@@ -38,6 +47,7 @@ def start_hand_tracking():
                     mp_hands.HAND_CONNECTIONS
                 )
         cv2.imshow('Hand Tracking - GesturesAI', frame)
+        
         if cv2.waitKey(1) & 0xFF == ord('q'):
             break
     cap.release()
