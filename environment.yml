@@ -3,29 +3,17 @@ channels:
   - conda-forge
   - defaults
 dependencies:
-  # Base Python and standard data tools
   - python=3.10
   - numpy
   - pandas
   - scikit-learn
   - matplotlib
-  
-  # Computer Vision
-  - opencv
-  
-  # Package managers
   - pip
-  
-  # Pip-specific dependencies
   - pip:
-    # Hand tracking
-    - mediapipe
-    
-    # Deep Learning (Using TensorFlow/Keras for building the gesture model)
+    - mediapipe==0.10.14
+    - opencv-python==4.10.0.84
     - tensorflow
-    
-    # System automation and control
-    - pyautogui         # For simulating keyboard/mouse presses
-    - pycaw             # For Windows audio control (volume)
-    - comtypes          # Required by pycaw
-    - pystray           # For creating a background system tray icon
+    - pyautogui
+    - pystray
+    - pycaw
+    - comtypes

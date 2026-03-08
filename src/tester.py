@@ -11,6 +11,7 @@ def run_diagnostics():
         print("❌ OpenCV is NOT installed. Run: pip install opencv-python")
         sys.exit(1)
 
+    
     # 2. Test MediaPipe Installation
     try:
         import mediapipe as mp
