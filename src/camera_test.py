@@ -2,8 +2,7 @@ import cv2
 import mediapipe as mp
 import sys
 import platform
-from normalize import normalize_to_wrist
-from normalize import normalized_distance_to_wrist
+from normalize import normalize_to_wrist, normalized_distance_to_wrist, normalize_altogether
 def start_hand_tracking():
     mp_hands = mp.solutions.hands
     mp_drawing = mp.solutions.drawing_utils
@@ -48,7 +47,7 @@ def start_hand_tracking():
             for hand_landmarks in results.multi_hand_landmarks:
 
                 pixel_coords = normalize_to_wrist(hand_landmarks, frame)
-                norm_distances = normalized_distance_to_wrist(pixel_coords)
+                norm_distances = normalize_altogether(hand_landmarks, frame)
                 # Print wrist and index fingertip coordinates (throttled)
                 if frame_count % print_every == 0:
                     wrist = hand_landmarks.landmark[0]
