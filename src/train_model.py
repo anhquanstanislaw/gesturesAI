@@ -1,4 +1,5 @@
 import json
+import sys
 import numpy as np
 import pickle
 from pathlib import Path
@@ -17,23 +18,9 @@ class GestureModel:
         self.scaler = StandardScaler()
     
     def flatten_frame(self, frame):
-        """Convert frame to flat features
-        
-        Input frame: [[x1,y1], [x2,y2], ..., [x21,y21]]
-        21 hand landmarks (0: wrist, 1-4: thumb, 5-8: index, 9-12: middle, 13-16: ring, 17-20: pinky)
-        
-        Output: [x1, y1, x2, y2, ..., x21, y21]
-        42 features total (each landmark = 2 coords)
-        """
         return np.array(frame).flatten()
         
     def load_data(self):
-        """Load JSONL data and prepare features and labels
-        
-        Each sample becomes 42 features:
-        [0,1]=wrist  [2,3]=thumb [4,5]=thumb [6,7]=thumb [8,9]=thumb
-        [10,11]=index [12,13]=index ... [40,41]=pinky
-        """
         X = []
         y = []
         
@@ -49,6 +36,7 @@ class GestureModel:
                             y.append(1)
         except FileNotFoundError:
             print(f"Warning: {self.clenched_fist_path} not found")
+            sys.exit(1)
         
         # Load normal hand data (label=0)
         print("Loading normal hand data...")
@@ -69,14 +57,10 @@ class GestureModel:
         print(f"Total samples: {len(X)}")
         print(f"Feature dimension: {X.shape[1]}")
         print(f"Class distribution - Clenched: {np.sum(y)}, Normal: {len(y) - np.sum(y)}")
-        
         return X, y
     
     def build_model(self, input_dim):
-        """Build neural network
-        
-        input_dim = 42 (21 landmarks × 2 coordinates each)
-        """
+
         self.model = keras.Sequential([
             layers.Input(shape=(input_dim,)),
             layers.Dense(128, activation='relu'),
@@ -104,7 +88,6 @@ class GestureModel:
         print(self.model.summary())
     
     def train(self, X, y, epochs=50, batch_size=16):
-        """Train the model"""
         # Split data
         X_train, X_test, y_train, y_test = train_test_split(
             X, y, test_size=0.2, random_state=42, stratify=y
@@ -140,35 +123,7 @@ class GestureModel:
         
         return history, X_test_scaled, y_test
     
-    def plot_training_history(self, history):
-        """Plot training and validation metrics"""
-        fig, (ax1, ax2) = plt.subplots(1, 2, figsize=(12, 4))
-        
-        # Loss
-        ax1.plot(history.history['loss'], label='Training Loss')
-        ax1.plot(history.history['val_loss'], label='Validation Loss')
-        ax1.set_xlabel('Epoch')
-        ax1.set_ylabel('Loss')
-        ax1.set_title('Model Loss')
-        ax1.legend()
-        ax1.grid(True)
-        
-        # Accuracy
-        ax2.plot(history.history['accuracy'], label='Training Accuracy')
-        ax2.plot(history.history['val_accuracy'], label='Validation Accuracy')
-        ax2.set_xlabel('Epoch')
-        ax2.set_ylabel('Accuracy')
-        ax2.set_title('Model Accuracy')
-        ax2.legend()
-        ax2.grid(True)
-        
-        plt.tight_layout()
-        plt.savefig('training_history.png')
-        print("\nTraining history saved as 'training_history.png'")
-        plt.close()
-    
     def save_model(self, model_name='gesture_model'):
-        """Save the trained model and scaler"""
         self.model.save(f'{model_name}.h5')
         print(f"Model saved as '{model_name}.h5'")
         
@@ -199,13 +154,8 @@ class GestureModel:
         # Train
         history, X_test, y_test = self.train(X, y, epochs=50, batch_size=16)
         
-        # Plot
-        self.plot_training_history(history)
-        
         # Save
         self.save_model('gesture_model')
-        
-        print("\n✓ Training complete!")
 
 if __name__ == "__main__":
     gm = GestureModel()
