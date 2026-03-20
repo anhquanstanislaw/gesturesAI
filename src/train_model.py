@@ -5,21 +5,24 @@ import pickle
 from pathlib import Path
 from sklearn.model_selection import train_test_split
 from sklearn.preprocessing import StandardScaler
-from tensorflow import keras
-from tensorflow.keras import layers
+from tensorflow import keras 
+from tensorflow.keras import layers  
 import matplotlib.pyplot as plt
 
 class GestureModel:
-    def __init__(self):
+    def __init__(self, path_to_curr_model: str):
         self.data_path = Path("stored_data")
         self.clenched_fist_path = self.data_path / "clenched_fist.jsonl"
         self.normal_hand_path = self.data_path / "normal_hand.jsonl"
         self.model = None
+        self.path_to_curr_model = Path("trained_models") / path_to_curr_model
+        if not self.path_to_curr_model.exists():
+            self.path_to_curr_model.mkdir()
         self.scaler = StandardScaler()
     
     def flatten_frame(self, frame):
         return np.array(frame).flatten()
-        
+    
     def load_data(self):
         X = []
         y = []
@@ -38,7 +41,6 @@ class GestureModel:
             print(f"Warning: {self.clenched_fist_path} not found")
             sys.exit(1)
         
-        # Load normal hand data (label=0)
         print("Loading normal hand data...")
         try:
             with open(self.normal_hand_path, 'r') as f:
@@ -124,39 +126,32 @@ class GestureModel:
         return history, X_test_scaled, y_test
     
     def save_model(self, model_name='gesture_model'):
-        self.model.save(f'{model_name}.h5')
+        self.model.save(f"{self.path_to_curr_model}/{model_name}.h5")
         print(f"Model saved as '{model_name}.h5'")
         
         # Save scaler for use in prediction
-        with open(f'{model_name}_scaler.pkl', 'wb') as f:
+        with open(f"{self.path_to_curr_model}/{model_name}_scaler.pkl", 'wb') as f:
             pickle.dump(self.scaler, f)
         print(f"Scaler saved as '{model_name}_scaler.pkl'")
     
-    def predict_frame(self, frame):
-        """Predict on a single frame"""
-        flattened = self.flatten_frame(frame).reshape(1, -1)
-        flattened_scaled = self.scaler.transform(flattened)
-        prediction = self.model.predict(flattened_scaled, verbose=0)[0][0]
-        return prediction
-    
     def run_full_pipeline(self):
         """Run complete training pipeline"""
-        # Load data
         X, y = self.load_data()
         
         if len(X) == 0:
             print("No training data found!")
             return
         
-        # Build model
         self.build_model(input_dim=X.shape[1])
         
-        # Train
         history, X_test, y_test = self.train(X, y, epochs=50, batch_size=16)
         
-        # Save
         self.save_model('gesture_model')
 
 if __name__ == "__main__":
-    gm = GestureModel()
+    print("give path to the model you want to train, or if not, it will be saved to default model ")
+    path_to_model = input().strip()
+    if not path_to_model:
+        path_to_model = "model_defaulted"
+    gm = GestureModel(path_to_model)
     gm.run_full_pipeline()
