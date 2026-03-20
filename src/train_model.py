@@ -10,12 +10,12 @@ from tensorflow.keras import layers
 import matplotlib.pyplot as plt
 
 class GestureModel:
-    def __init__(self, path_to_curr_model: str):
+    def __init__(self, model_folder: str="model_defaulted"):
         self.data_path = Path("stored_data")
         self.clenched_fist_path = self.data_path / "clenched_fist.jsonl"
         self.normal_hand_path = self.data_path / "normal_hand.jsonl"
         self.model = None
-        self.path_to_curr_model = Path("trained_models") / path_to_curr_model
+        self.path_to_curr_model = Path("trained_models") / model_folder
         if not self.path_to_curr_model.exists():
             self.path_to_curr_model.mkdir()
         self.scaler = StandardScaler()
@@ -149,7 +149,7 @@ class GestureModel:
         self.save_model('gesture_model')
 
 if __name__ == "__main__":
-    print("give path to the model you want to train, or if not, it will be saved to default model ")
+    print("give model name, if not it is trained at defaulted: ")
     path_to_model = input().strip()
     if not path_to_model:
         path_to_model = "model_defaulted"
