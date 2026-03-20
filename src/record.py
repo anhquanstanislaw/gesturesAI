@@ -96,6 +96,7 @@ class Record:
         self.smooth_y = (self.smooth_y * self.alpha) + (target_y * (1 - self.alpha))
 
     def run(self):
+        is_pressed = False
         while True:
             ret, frame = self.cap.read()
             if not ret:
@@ -119,9 +120,17 @@ class Record:
                 raw_x, raw_y = [right_hand.landmark[5].x, right_hand.landmark[5].y]
                 self.scale_point(raw_x, raw_y)
                 if prediction > 0.90:
-                    pyautogui.click()
+                    if not is_pressed:
+                        is_pressed = True
+                        pyautogui.mouseDown()
+                    else:
+                        pyautogui.moveTo(self.smooth_x, self.smooth_y, _pause=False)
                 else:
+                    if is_pressed:
+                        pyautogui.mouseUp()
+                        is_pressed = False
                     pyautogui.moveTo(self.smooth_x, self.smooth_y, _pause=False)
+                    
                 cv2.putText(frame, str(prediction), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             key = cv2.waitKey(1)
             cv2.imshow('Hand Tracking - GesturesAI', frame)

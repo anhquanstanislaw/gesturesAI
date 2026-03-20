@@ -9,7 +9,7 @@ def main():
 
     
     while True:
-        choice = input("\nEnter your choice (1-2): ").strip()
+        choice = input("\nEnter your choice (1-3): ").strip()
         if choice == '1':
 
             print("give model name, if not it is trained at defaulted: ")
@@ -22,7 +22,7 @@ def main():
 
         
         elif choice == '2':
-            print("input model name file")
+            print("input model name file if not it is at defaulted:")
             path_to_model = input().strip()
             if not path_to_model:
                 path_to_model = "model_defaulted"
