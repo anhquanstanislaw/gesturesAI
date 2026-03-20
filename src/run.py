@@ -28,9 +28,10 @@ def main():
                 path_to_model = "model_defaulted"
             curr = record.Record(path_to_model)
             curr.run()
+            exit(0)
         elif choice == '3':
             print("\nGoodbye!")
-            sys.exit(0)()
+            sys.exit(0)
         else:
             print("\nPlease try again.")
 

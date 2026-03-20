@@ -10,13 +10,19 @@ from normalize import normalize_altogether
 from mediapipe.framework.formats.landmark_pb2 import NormalizedLandmarkList
 from typing import NamedTuple
 import recognition
+import pyautogui
 
 class Record:
-    def __init__(self, model_folder: str, sampling_rate: float = 0.1, max_hands: int = 2, min_detection_confidence: float = 0.5, min_tracking_confidence:float = 0.5):
-        self.sampling_rate = sampling_rate # 0.1 - 10 photos per second
+    def __init__(self, model_folder: str, max_hands: int = 2, min_detection_confidence: float = 0.5, min_tracking_confidence:float = 0.5):
         self._init_model(max_hands, min_detection_confidence, min_tracking_confidence)
         self._init_camera()
         self.detector = recognition.Recognition(model_folder)
+        self.screen_w, self.screen_h = pyautogui.size()
+        self.smooth_x = 0
+        self.smooth_y = 0
+        self.alpha = 0.6 # cursor smoothing coefficient
+        self.margin = 0.2 # shrinks active camera/sensitivity lower = larger active area
+        self.safe_margin = 5 # pixel buffor 
 
     def _init_model(self, max_hands: int, min_detection_confidence: float, min_tracking_confidence: float):
         self.mp_hands = mp.solutions.hands
@@ -74,6 +80,21 @@ class Record:
         
         return None
     
+    def scale_point(self, raw_x: float, raw_y: float):
+        scaled_x = (raw_x - self.margin) / (1 - self.margin * 2)
+        scaled_y = (raw_y - self.margin) / (1 - self.margin * 2)
+        
+        scaled_x = max(0, min(1, scaled_x))
+        scaled_y = max(0, min(1, scaled_y))
+
+        target_x = self.screen_w - scaled_x * self.screen_w
+        target_y = scaled_y * self.screen_h
+        target_x = max(self.safe_margin, min(self.screen_w - self.safe_margin, target_x))
+        target_y = max(self.safe_margin, min(self.screen_h - self.safe_margin, target_y))
+
+        self.smooth_x = (self.smooth_x * self.alpha) + (target_x * (1 - self.alpha))
+        self.smooth_y = (self.smooth_y * self.alpha) + (target_y * (1 - self.alpha))
+
     def run(self):
         while True:
             ret, frame = self.cap.read()
@@ -87,14 +108,20 @@ class Record:
                 for hand_landmarks in results.multi_hand_landmarks:
                     self.mp_drawing.draw_landmarks(
                         frame, 
-                        hand_landmarks, 
+                        hand_landmarks,
                         self.mp_hands.HAND_CONNECTIONS
                     )
-
             left_hand = self.get_left_hand(results)
             right_hand = self.get_right_hand(results)
+
             if right_hand:
                 prediction = self.detector.predict(right_hand, frame)
+                raw_x, raw_y = [right_hand.landmark[5].x, right_hand.landmark[5].y]
+                self.scale_point(raw_x, raw_y)
+                if prediction > 0.90:
+                    pyautogui.click()
+                else:
+                    pyautogui.moveTo(self.smooth_x, self.smooth_y, _pause=False)
                 cv2.putText(frame, str(prediction), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
             key = cv2.waitKey(1)
             cv2.imshow('Hand Tracking - GesturesAI', frame)
@@ -102,3 +129,6 @@ class Record:
             if key & 0xFF == ord('q'):
                 break   
 
+        self.cap.release()
+        cv2.destroyAllWindows()
+        self.hands.close()
