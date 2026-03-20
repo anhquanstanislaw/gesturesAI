@@ -14,6 +14,7 @@ class GestureModel:
         self.data_path = Path("stored_data")
         self.clenched_fist_path = self.data_path / "clenched_fist.jsonl"
         self.normal_hand_path = self.data_path / "normal_hand.jsonl"
+        self.middle_pinch_path = self.data_path / "middle_pinch.jsonl"
         self.model = None
         self.path_to_curr_model = Path("trained_models") / model_folder
         if not self.path_to_curr_model.exists():
@@ -53,12 +54,24 @@ class GestureModel:
         except FileNotFoundError:
             print(f"Warning: {self.normal_hand_path} not found")
         
+        print("Loading middle pinch data...")
+        try:
+            with open(self.middle_pinch_path, 'r') as f:
+                for line in f:
+                    if line.strip():
+                        gesture_frames = json.loads(line)
+                        for frame in gesture_frames:
+                            X.append(self.flatten_frame(frame))
+                            y.append(2)
+        except FileNotFoundError:
+            print(f"Warning: {self.middle_pinch_path} not found")
+        
         X = np.array(X)
         y = np.array(y)
         
         print(f"Total samples: {len(X)}")
         print(f"Feature dimension: {X.shape[1]}")
-        print(f"Class distribution - Clenched: {np.sum(y)}, Normal: {len(y) - np.sum(y)}")
+        print(f"Class distribution - Normal: {np.sum(y == 0)}, Clenched: {np.sum(y == 1)}, Pinch: {np.sum(y == 2)}")        
         return X, y
     
     def build_model(self, input_dim):
@@ -78,12 +91,12 @@ class GestureModel:
             layers.Dropout(0.2),
             
             layers.Dense(16, activation='relu'),
-            layers.Dense(1, activation='sigmoid')  # Binary classification
+            layers.Dense(3, activation='softmax')
         ])
         
         self.model.compile(
             optimizer='adam',
-            loss='binary_crossentropy',
+            loss='sparse_categorical_crossentropy',
             metrics=['accuracy']
         )
         

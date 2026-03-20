@@ -20,6 +20,7 @@ class TakeData:
         self.data_path = Path("stored_data")
         self.clenched_fist_path = self.data_path / "clenched_fist.jsonl"
         self.normal_hand_path = self.data_path / "normal_hand.jsonl"
+        self.middle_pinch_path = self.data_path / "middle_pinch.jsonl"
 
     def _init_model(self, max_hands: int, min_detection_confidence: float, min_tracking_confidence: float):
         self.mp_hands = mp.solutions.hands
@@ -81,16 +82,18 @@ class TakeData:
         print("\n" * 5)
         print("Type 1 to start recording normal hand")
         print("Type 2 to start recording clenched fist")
-        print("Type 3 to stop recording and save results")
-        print("If you've done eny error type 4 to stop recording and abandon records")
-        print("Type 4 while you're not recording to abandon any current records")
+        print("Type 3 to start recording middle pinch")
+        print("Type 4 to stop recording and save results")
+        print("If you've done eny error type 5 to stop recording and abandon records")
+        print("Type 5 while you're not recording to abandon any current records")
 
         recording = 0
         current_records = []
         self.saved_records_clenched_fist = []
         self.saved_records_normal_hand = []
+        self.saved_records_middle_pinch = []
         last_captured_time = 0
-
+        
         while True:
             ret, frame = self.cap.read()
             if not ret:
@@ -135,17 +138,27 @@ class TakeData:
 
                 print("Started recording clenched fist")
 
-            if key & 0xFF == ord('3') and recording:
+            if key & 0xFF == ord('3') and not recording:
+                recording = 3
+                last_captured_time = 0
+
+                print("Started recording middle pinch")
+
+
+
+            if key & 0xFF == ord('4') and recording:
                 print("Saving changes")
                 if recording == 1:
                     self.saved_records_normal_hand.extend(deepcopy(current_records))
                 if recording == 2:
                     self.saved_records_clenched_fist.extend(deepcopy(current_records))
-                
+                if recording == 3:
+                    self.saved_records_middle_pinch.extend(deepcopy(current_records))
+
                 current_records = []
                 recording = 0
             
-            if key & 0xFF == ord('4'):
+            if key & 0xFF == ord('5'):
                 if recording:
                     print("Abandoning current recording")
                     current_records = []
@@ -155,6 +168,7 @@ class TakeData:
 
                     self.saved_records_clenched_fist = []
                     self.saved_records_normal_hand = []
+                    self.saved_records_middle_pinch = []
 
             if key & 0xFF == ord('q'):
                 break   
@@ -169,7 +183,10 @@ class TakeData:
             with open(self.normal_hand_path, "a", encoding="utf-8") as f:
                 f.write(json.dumps(self.saved_records_normal_hand) + "\n")
 
-            
+        if self.saved_records_middle_pinch:
+            with open(self.middle_pinch_path, "a", encoding="utf-8") as f:
+                f.write(json.dumps(self.saved_records_middle_pinch) + "\n")
+
     def cleanup(self):
         self.cap.release()
         cv2.destroyAllWindows()

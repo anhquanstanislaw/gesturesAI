@@ -31,6 +31,6 @@ class Recognition:
         normalized = normalize.normalize_altogether(thishand, frame)
         X = np.array(normalized).flatten().reshape(1, -1)
         X_scaled = self.scaler.transform(X)
-        prediction = self.model.predict(X_scaled, verbose=0)[0][0]
+        prediction = self.model.predict(X_scaled, verbose=0)[0]
         return prediction
         

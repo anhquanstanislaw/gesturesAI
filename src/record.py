@@ -117,9 +117,13 @@ class Record:
 
             if right_hand:
                 prediction = self.detector.predict(right_hand, frame)
+                names = ["Normal", "Clenched", "Pinch"]
+                for i, p in enumerate(prediction):
+                    cv2.putText(frame, f"{names[i]}: {p:.2f}", (50, 50 + i * 40), 
+                    cv2.FONT_HERSHEY_SIMPLEX, 0.8, (0, 255, 0), 2)
                 raw_x, raw_y = [right_hand.landmark[5].x, right_hand.landmark[5].y]
                 self.scale_point(raw_x, raw_y)
-                if prediction > 0.90:
+                if prediction[2] > 0.9 and prediction[2] > prediction[0] and prediction[2] > prediction[1]:
                     if not is_pressed:
                         is_pressed = True
                         pyautogui.mouseDown()
@@ -129,9 +133,12 @@ class Record:
                     if is_pressed:
                         pyautogui.mouseUp()
                         is_pressed = False
-                    pyautogui.moveTo(self.smooth_x, self.smooth_y, _pause=False)
                     
-                cv2.putText(frame, str(prediction), (50, 50), cv2.FONT_HERSHEY_SIMPLEX, 1, (0, 255, 0), 2)
+                    if prediction[1] > 0.9 and prediction[1] > prediction[2] and prediction[1] > prediction[0]:
+                        pyautogui.rightClick()
+                    else:
+                        pyautogui.moveTo(self.smooth_x, self.smooth_y, _pause=False)
+
             key = cv2.waitKey(1)
             cv2.imshow('Hand Tracking - GesturesAI', frame)
             
